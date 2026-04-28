@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Client Dashboard | Tapat</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+	<!========== SECURITY GUARD: CLIENT ==========-->
+<script>
+    async function checkAuth() {
+        const { data: { session } } = await _supabase.auth.getSession();
+        
+        if (!session) {
+            window.location.href = 'index.html';
+            return;
+        }
+
+        const { data: profile } = await _supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', session.user.id)
+            .single();
+
+        if (!profile || profile.role !== 'client') {
+            window.location.href = 'index.html';
+        }
+    }
+    checkAuth();
+</script>
+
+</head>
+<body class="admin-page">
+
+<!========== NAV SECTION ==========-->
+<header class="admin-nav">
+    <nav class="container nav-bar">
+        <div class="logo">TAPAT</div>
+        <div class="nav-links">
+            <button class="btn btn-pill-outline" onclick="handleLogout()">Sign Out</button>
+        </div>
+    </nav>
+</header>
+
+<main class="container mt-20">
+
+<!========== IDENTITY & BALANCE SECTION ==========-->
+<div class="client-header-grid">
+    
+    <div class="admin-card">
+        <p class="section-label-small">My Balance</p>
+        <div class="points-display">
+            <div class="pts-group">
+                <small>Available</small>
+                <h1 id="user-available-pts">0</h1>
+            </div>
+            <div class="pts-group">
+                <small>Held in Vault</small>
+                <h2 id="user-held-pts">0</h2>
+            </div>
+        </div>
+    </div>
+
+    <div class="admin-card profile-info-card">
+        <div class="profile-details">
+            <h2 id="client-name">Loading...</h2>
+            <div class="badge-row mt-12">
+                <span id="client-tier" class="type-badge type-earned">---</span>
+                <span id="client-privilege" class="type-badge">---</span>
+            </div>
+        </div>
+        <div class="permanent-qr-container">
+            <div id="permanent-qr"></div>
+            <p class="qr-subtext">CASHIER SCAN ID</p>
+        </div>
+    </div>
+</div>
+
+<!========== REWARDS MENU SECTION ==========-->
+<section class="admin-card mt-20">
+    <div class="history-header">
+        <h3>Redeem Rewards</h3>
+        <div class="category-tabs">
+            <button class="btn btn-pill-outline btn-sm active" onclick="filterMenu('drink')">Drinks</button>
+            <button class="btn btn-pill-outline btn-sm" onclick="filterMenu('food')">Food</button>
+            <button class="btn btn-pill-outline btn-sm" onclick="filterMenu('merch')">Merch</button>
+            <button class="btn btn-pill-outline btn-sm" onclick="filterMenu('others')">Others</button>
+        </div>
+    </div>
+
+    <div class="client-product-grid" id="menu-container"></div>
+</section>
+
+<!========== MY RALLY SECTION (5x2 GRID) ==========-->
+<section class="admin-card mt-20">
+    <div class="history-header">
+        <h3>My Rally</h3>
+        <span id="rally-counter" class="rally-status-text">0 / 10 Stamps</span>
+    </div>
+    
+    <div class="rally-stamp-grid" id="rally-grid">
+        <div class="stamp-slot" data-idx="0"></div>
+        <div class="stamp-slot" data-idx="1"></div>
+        <div class="stamp-slot" data-idx="2"></div>
+        <div class="stamp-slot" data-idx="3"></div>
+        <div class="stamp-slot" data-idx="4"></div>
+        <div class="stamp-slot" data-idx="5"></div>
+        <div class="stamp-slot" data-idx="6"></div>
+        <div class="stamp-slot" data-idx="7"></div>
+        <div class="stamp-slot" data-idx="8"></div>
+        <div class="stamp-slot" data-idx="9"></div>
+    </div>
+
+    <div class="grand-prize-footer mt-20">
+        <div class="prize-content">
+            <p class="section-label-small">Grand Prize</p>
+            <h4 id="grand-prize-name">---</h4>
+        </div>
+        <div class="rally-running-total">
+            <small>Points Gathered:</small>
+            <strong id="rally-pts-total">0</strong>
+        </div>
+        <button id="btn-claim-rally" class="btn btn-claim-locked" onclick="claimRally()">
+            Claim Reward
+        </button>
+    </div>
+</section>
+
+<!========== QR VAULT SECTION ==========-->
+<section class="admin-card mt-20">
+    <p class="section-label-small">QR Vault</p>
+    <div class="vault-scroll" id="vault-list">
+        <div class="empty-vault-msg">No active rewards in vault.</div>
+    </div>
+</section>
+
+<!========== POINTS HISTORY SECTION ==========-->
+<section class="admin-card mt-20">
+    <p class="section-label-small">Points History</p>
+    <div class="history-table-wrapper">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Date</th>
+                    <th>Detail</th>
+                    <th style="text-align:right;">Points</th>
+                </tr>
+            </thead>
+            <tbody id="client-history-log"></tbody>
+        </table>
+    </div>
+</section>
+
+</main>
+
+<!========== FOOTER SECTION ==========-->
+<footer>
+    <div class="container text-center">
+        <p><strong>TAPAT</strong> by Apricity Business Solutions</p>
+        <p>&copy; 2026 Bughaw Cafe Demo</p>
+    </div>
+</footer>
+
+<script src="script.js"></script>
+</body>
+</html>

@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Tapat | Bughaw Cafe</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- ═══════════════════════ NAV ═══════════════════════ -->
+<header>
+    <nav class="container nav-bar">
+        <div class="logo">TAPAT</div>
+        <div class="nav-links">
+            <button class="btn btn-primary" id="client-join-btn">Join the Club</button>
+        </div>
+    </nav>
+</header>
+
+<!-- ═══════════════════════ HERO ═══════════════════════ -->
+<section id="hero" class="hero-section" style="background-image: linear-gradient(rgba(0,0,0,0.32), rgba(0,0,0,0.32)), url('https://images.unsplash.com/photo-1509042239860-f550ce710b93?q=80&w=1200');">
+    <div class="container text-center">
+        <h1 class="text-white">Bughaw Cafe</h1>
+        <p>Authentic Flavors, Local Loyalty.</p>
+        <button class="btn btn-primary" onclick="document.getElementById('featured-collections').scrollIntoView({behavior:'smooth'})">Discover More</button>
+    </div>
+</section>
+
+<!-- ═══════════════════════ FEATURED COLLECTIONS ═══════════════════════ -->
+<section id="featured-collections" class="container mt-20">
+
+    <div class="sb-grid">
+        <div class="sb-card">
+            <div class="sb-image">
+                <img src="https://images.unsplash.com/photo-1495474472287-4d71bcdd2085?auto=format&fit=crop&w=800&q=80" alt="Featured Products">
+            </div>
+            <div class="sb-content">
+                <h2>Featured</h2>
+                <p>The Founder's Selection. A curated collection of our most unique local blends and signature crafts.</p>
+                <button class="btn btn-pill-outline">See More</button>
+            </div>
+        </div>
+
+        <div class="sb-card">
+            <div class="sb-image">
+                <img src="https://images.unsplash.com/photo-1509042239860-f550ce710b93?auto=format&fit=crop&w=800&q=80" alt="Best Sellers">
+            </div>
+            <div class="sb-content">
+                <h2>Best Sellers</h2>
+                <p>The crowd favorites. Tried, tested, and loved by our local community every single day.</p>
+                <button class="btn btn-pill-outline">See More</button>
+            </div>
+        </div>
+    </div>
+
+    <div class="sb-grid mt-20">
+        <div class="sb-card">
+            <div class="sb-image">
+                <img src="https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80" alt="Limited Edition">
+            </div>
+            <div class="sb-content">
+                <h2>Limited Edition</h2>
+                <p>Exclusive seasonal releases. Grab them while they last — once they're gone, they're gone.</p>
+                <button class="btn btn-pill-outline">See More</button>
+            </div>
+        </div>
+
+        <div class="sb-card">
+            <div class="sb-image">
+                <img src="https://images.unsplash.com/photo-1551024506-0bccd828d307?auto=format&fit=crop&w=800&q=80" alt="New Release">
+            </div>
+            <div class="sb-content">
+                <h2>New Release</h2>
+                <p>Fresh from the roastery. Be the first to experience our newest flavor innovations.</p>
+                <button class="btn btn-pill-outline">See More</button>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════ MENU ═══════════════════════ -->
+<section id="menu" class="container mt-20">
+    <h2 class="text-center">Our Full Menu</h2>
+
+    <div class="menu-block">
+        <h3>Drinks</h3>
+        <div id="drinks-container" class="menu-grid"></div>
+    </div>
+
+    <div class="menu-block">
+        <h3>Food</h3>
+        <div id="food-container" class="menu-grid"></div>
+    </div>
+</section>
+
+<!-- ═══════════════════════ STAMP RALLY ═══════════════════════ -->
+<section id="stamps" class="container mt-20">
+    <div class="loyalty-card">
+        <h2 class="text-center">Current Stamp Rally</h2>
+        <p class="text-center mb-20" id="rally-timer">Time Remaining: --:--:--</p>
+
+        <div id="stamp-grid" class="stamp-grid"></div>
+
+        <div id="qr-area" class="text-center mt-20">
+            <p style="margin-bottom:12px;">Complete a task? Show your ID:</p>
+            <div id="user-qr-placeholder"></div>
+        </div>
+    </div>
+</section>
+
+<!-- ═══════════════════════ RALLY RULES ═══════════════════════ -->
+<section id="rally-rules" class="container mt-20 bg-cream p-20">
+    <h3>Rally Rules</h3>
+    <ul class="rules-list">
+        <li>Complete all <strong>10 tasks</strong> before the time limit expires.</li>
+        <li>Upon task completion, present your QR code to staff for verification.</li>
+        <li>Once all 10 tasks are marked complete, show your card to redeem your reward.</li>
+        <li><strong>Incomplete Rallies:</strong> If the timer expires, each completed task will be converted into points and credited to your account.</li>
+    </ul>
+</section>
+
+<!-- ═══════════════════════ TIERS ═══════════════════════ -->
+<section id="loyalty-tiers" class="container mt-20">
+    <h2 class="text-center">The Tapat Tiers</h2>
+    <div class="tier-table-container">
+        <table class="tier-table">
+            <thead>
+                <tr>
+                    <th>Tier Level</th>
+                    <th>Visits</th>
+                    <th>Privilege (Earn Rate)</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td><strong>Panauhin</strong></td>
+                    <td>1 Visit</td>
+                    <td>₱30 = 1 Point</td>
+                </tr>
+                <tr>
+                    <td><strong>Kasama</strong></td>
+                    <td>2–3 Visits</td>
+                    <td>₱20 = 1 Point</td>
+                </tr>
+                <tr>
+                    <td><strong>Kaanib</strong></td>
+                    <td>4–6 Visits</td>
+                    <td>₱18 = 1 Point</td>
+                </tr>
+                <tr>
+                    <td><strong>Timawa</strong></td>
+                    <td>7–10 Visits</td>
+                    <td>₱15 = 1 Point</td>
+                </tr>
+                <tr>
+                    <td><strong>Maginoo</strong></td>
+                    <td>11–15 Visits</td>
+                    <td>₱13 = 1 Point</td>
+                </tr>
+                <tr>
+                    <td><strong>Maharlika</strong></td>
+                    <td>16+ Visits</td>
+                    <td>₱10 = 1 Point</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</section>
+
+<!-- ═══════════════════════ FOOTER ═══════════════════════ -->
+<footer>
+    <div class="container text-center">
+        <p><strong>TAPAT</strong> by Apricity Business Solutions</p>
+        <p>&copy; 2026 Bughaw Cafe Demo</p>
+    </div>
+</footer>
+
+<!-- ═══════════════════════ AUTH MODAL ═══════════════════════ -->
+<div id="auth-modal" class="modal-overlay" style="display: none;">
+    <div class="modal-container">
+        <button class="close-modal" onclick="toggleModal(false)">&times;</button>
+
+        <!-- Login -->
+        <div id="login-view" class="auth-view">
+            <h2 class="text-center">Welcome Back</h2>
+            <p class="text-center">Log in to check your stamps</p>
+            <form id="login-form">
+                <input type="email"    placeholder="Email Address" required class="auth-input">
+                <input type="password" placeholder="Password"      required class="auth-input">
+                <button type="submit" class="btn btn-primary w-100">Log In</button>
+            </form>
+            <div class="auth-links">
+                <a href="#" onclick="switchAuthView('signup')">New here? Join the Club</a>
+                <a href="#" onclick="switchAuthView('forgot')">Forgot Password?</a>
+            </div>
+        </div>
+
+        <!-- Sign Up -->
+        <div id="signup-view" class="auth-view" style="display: none;">
+            <h2 class="text-center">Join the Club</h2>
+            <p class="text-center">Start earning rewards at Bughaw Cafe</p>
+            <form id="signup-form">
+                <input type="text"     placeholder="Full Name"       required class="auth-input">
+                <input type="email"    placeholder="Email Address"   required class="auth-input">
+                <input type="password" placeholder="Create Password" required class="auth-input">
+                <button type="submit" class="btn btn-primary w-100">Create Account</button>
+            </form>
+            <div class="auth-links">
+                <a href="#" onclick="switchAuthView('login')">Already a member? Log In</a>
+            </div>
+        </div>
+
+        <!-- Forgot -->
+        <div id="forgot-view" class="auth-view" style="display: none;">
+            <h2 class="text-center">Reset Password</h2>
+            <p class="text-center">We'll email you a recovery link</p>
+            <form id="forgot-form">
+                <input type="email" placeholder="Enter your email" required class="auth-input">
+                <button type="submit" class="btn btn-primary w-100">Send Reset Link</button>
+            </form>
+            <div class="auth-links">
+                <a href="#" onclick="switchAuthView('login')">Back to Login</a>
+            </div>
+        </div>
+
+        <!-- Secret admin dots -->
+        <div class="corner-dot" style="top:10px; left:10px;"></div>
+        <div class="corner-dot" style="top:10px; right:10px;"></div>
+        <div class="corner-dot" style="bottom:10px; left:10px;"></div>
+        <div class="corner-dot" style="bottom:10px; right:10px; cursor:pointer;" onclick="switchAuthView('login', true)"></div>
+    </div>
+</div>
+
+<script src="script.js"></script>
+</body>
+</html>
