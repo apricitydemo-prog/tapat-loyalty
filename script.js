@@ -141,6 +141,52 @@ async function checkUserStatus(user) {
     }
 }
 
+//===================== HANDLE SIGN UP ================//
+
+async function handleSignUp(e) {
+    e.preventDefault();
+    const fullName = e.target[0].value.trim();
+    const email    = e.target[1].value.trim();
+    const password = e.target[2].value;
+
+    // 1. Create the auth user
+    const { data, error } = await _supabase.auth.signUp({ email, password });
+
+    if (error) {
+        alert("Sign up failed: " + error.message);
+        return;
+    }
+
+    // 2. Generate a simple member code e.g. "BGW-481023"
+    const memberCode = 'BGW-' + Math.floor(100000 + Math.random() * 900000);
+
+    // 3. Insert full profile row
+    const { error: profileError } = await _supabase
+        .from('profiles')
+        .insert({
+            id:               data.user.id,
+            full_name:        fullName,
+            email:            email,
+            role:             'client',
+            tier:             0,           // Dayo tier (starting tier)
+            tier_name:        'Dayo',
+            main_points:      0,
+            visit_count:      0,
+            redemption_hold:  0,
+            member_code:      memberCode
+            // created_at is auto-filled by Supabase
+        });
+
+    if (profileError) {
+        console.error("Profile insert error:", profileError.message);
+        alert("Account created but profile setup failed: " + profileError.message);
+        return;
+    }
+
+    alert("Welcome to the club! Please check your email to confirm your account.");
+    toggleModal(false);
+}
+
 //================= PRODUCT ENROLLMENT LOGIC =============//
 
 async function handleProductSubmit(event) {
