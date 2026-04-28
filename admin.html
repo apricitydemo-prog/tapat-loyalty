@@ -283,6 +283,13 @@
                 <p class="section-label">Rally</p>
                 <h3>Rally Management</h3>
 
+                <!--
+                    STEP 1 — Basic info only.
+                    script.js → handleRallySubmit() inserts a row into `rallies`
+                    with is_active=false, then calls loadRallyDrafts().
+                    Task inputs live inside each draft card (injected by
+                    buildRallyDraftCard), NOT here.
+                -->
                 <form id="rally-form" onsubmit="handleRallySubmit(event)">
                     <div class="form-group">
                         <label>Rally Name</label>
@@ -298,32 +305,31 @@
                             <input type="date" id="r-end" required class="auth-input">
                         </div>
                     </div>
-
-                    <label>Tasks &amp; Points (up to 10)</label>
-                    <div class="task-management-grid" id="task-input-grid">
-                        <!--
-                            data-index used by script.js → collectTaskInputs()
-                            Only rows with a non-empty description are saved.
-                        -->
-                        <div class="task-row"><span class="task-num">1.</span><input type="text"   class="task-input task-desc-input" data-index="0" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="0" placeholder="Pts" min="0"></div>
-                        <div class="task-row"><span class="task-num">2.</span><input type="text"   class="task-input task-desc-input" data-index="1" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="1" placeholder="Pts" min="0"></div>
-                        <div class="task-row"><span class="task-num">3.</span><input type="text"   class="task-input task-desc-input" data-index="2" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="2" placeholder="Pts" min="0"></div>
-                        <div class="task-row"><span class="task-num">4.</span><input type="text"   class="task-input task-desc-input" data-index="3" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="3" placeholder="Pts" min="0"></div>
-                        <div class="task-row"><span class="task-num">5.</span><input type="text"   class="task-input task-desc-input" data-index="4" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="4" placeholder="Pts" min="0"></div>
-                        <div class="task-row"><span class="task-num">6.</span><input type="text"   class="task-input task-desc-input" data-index="5" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="5" placeholder="Pts" min="0"></div>
-                        <div class="task-row"><span class="task-num">7.</span><input type="text"   class="task-input task-desc-input" data-index="6" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="6" placeholder="Pts" min="0"></div>
-                        <div class="task-row"><span class="task-num">8.</span><input type="text"   class="task-input task-desc-input" data-index="7" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="7" placeholder="Pts" min="0"></div>
-                        <div class="task-row"><span class="task-num">9.</span><input type="text"   class="task-input task-desc-input" data-index="8" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="8" placeholder="Pts" min="0"></div>
-                        <div class="task-row"><span class="task-num">10.</span><input type="text"  class="task-input task-desc-input" data-index="9" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="9" placeholder="Pts" min="0"></div>
+                    <div class="form-group">
+                        <label>Grand Prize Name</label>
+                        <input type="text" id="r-prize-name" placeholder="e.g. Free Pastry &amp; Coffee" class="auth-input">
                     </div>
-
-                    <div class="form-group mt-12">
-                        <label>Grand Prize</label>
-                        <input type="text" id="r-prize" placeholder="e.g. Free Pastry &amp; Coffee" class="auth-input">
+                    <div class="form-group">
+                        <label>Grand Prize Description</label>
+                        <input type="text" id="r-prize-desc" placeholder="e.g. One free item of your choice" class="auth-input">
                     </div>
-
-                    <button type="submit" class="btn btn-primary w-100">Launch Rally</button>
+                    <button type="submit" class="btn btn-primary w-100">Create Rally Draft</button>
                 </form>
+
+                <!--
+                    STEP 2 — Draft cards injected here by loadRallyDrafts().
+                    Each card is built by buildRallyDraftCard() and contains
+                    the 10-row task grid + Publish / Delete buttons.
+                    Clicking a card header calls toggleRallyCard(rallyId).
+                -->
+                <div class="mt-20">
+                    <h3>Rally Drafts</h3>
+                    <div id="rally-draft-list">
+                        <p id="rally-draft-empty" style="color:#bbb; font-size:13px; text-align:center; padding:20px 0;">
+                            No drafts yet. Create one above.
+                        </p>
+                    </div>
+                </div>
             </div>
 
 <div class="admin-card mt-20">
@@ -417,11 +423,18 @@
       renderProductList(arr)     — inject rows into #product-list
                                    each row: name, price, points, cat1, cat2 + delete button
 
-    RALLY
-      handleRallySubmit(e)       — e.preventDefault(), collectTaskInputs(), insert `rallies`,
-                                   insert `rally_tasks`, insert `user_rally_tasks` for all users
-      collectTaskInputs()        — zip .task-desc-input + .task-pts-input by data-index,
-                                   return non-empty rows as [{ description, points }]
+    RALLY  (two-step flow)
+      Step 1 — handleRallySubmit(e)
+                                 — reads #r-name #r-start #r-end #r-prize-name #r-prize-desc
+                                   inserts row into `rallies` (is_active=false), calls loadRallyDrafts()
+      Step 2 — loadRallyDrafts() — fetches non-finalized rallies, injects .rally-draft-card
+                                   elements into #rally-draft-list via buildRallyDraftCard()
+               toggleRallyCard(id) — opens/closes a card so admin can enter tasks
+               publishRally(id)  — collectTaskInputsFromCard(), insert `rally_tasks`,
+                                   set is_active=true, calls loadRallyDrafts() + loadRallySummary()
+               deleteRallyDraft(id) — deletes draft (is_active=false only)
+               collectTaskInputsFromCard(card)
+                                 — reads .task-desc-input + .task-pts-input within a specific card
 
     DOM IDs
       Scanner   : #scanner-viewport #qr-reader #sc-line #scanner-idle #scanner-status-msg
@@ -435,9 +448,10 @@
                   #m2-redeem-area #m2-held #m2-after
       M3 cards  : #m3-client-card #m3-avatar #m3-name #m3-tier #m3-points
                   #m3-rally-area #m3-rally-name #m3-progress #m3-task-list
-      Products  : #product-form #p-name #p-price #p-points #p-cat1 #p-cat2 #product-list
-      Rally     : #rally-form #r-name #r-start #r-end #r-prize
-                  .task-desc-input[data-index] .task-pts-input[data-index]
+      Products  : #product-form #p-name #p-price #p-points #p-image #p-cat1 #p-cat2 #product-list
+      Rally     : #rally-form #r-name #r-start #r-end #r-prize-name #r-prize-desc
+                  #rally-draft-list #rally-draft-empty
+                  (task inputs are per-card: .task-desc-input[data-index] .task-pts-input[data-index])
     ═══════════════════════════════════════════════════════════════
     -->
     <script src="script.js"></script>
