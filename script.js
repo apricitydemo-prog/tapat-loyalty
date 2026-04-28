@@ -5,7 +5,13 @@ const supabaseKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZS
 // Note: the library uses 'supabase' globally from the CDN
 let _supabase;
 try {
-    _supabase = supabase.createClient(supabaseUrl, supabaseKey);
+    _supabase = supabase.createClient(supabaseUrl, supabaseKey, {
+    auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: true
+    }
+});
     console.log("Tapat Engine: Initialized");
 } catch (err) {
     console.error("Supabase failed to initialize:", err);
@@ -291,6 +297,13 @@ async function loadProducts() {
 async function handleRallySubmit(e) {
     e.preventDefault();
 
+    const { data: { session } } = await _supabase.auth.getSession();
+    if (!session) {
+        alert('You are not logged in. Please log in again.');
+        window.location.href = 'index.html';
+        return;
+    }
+
     const title     = document.getElementById('r-name').value.trim();
     const startDate = document.getElementById('r-start').value;
     const endDate   = document.getElementById('r-end').value;
@@ -545,4 +558,3 @@ document.addEventListener('DOMContentLoaded', () => {
     loadProducts(); // <--- Add this here
 });
 
-}
