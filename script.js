@@ -190,10 +190,11 @@ async function handleSignUp(e) {
 //================= PRODUCT ENROLLMENT LOGIC =============//
 
 async function handleProductSubmit(event) {
-    event.preventDefault(); // Prevents iPad from reloading the page
+    event.preventDefault(); 
     
     // 1. Collect values from your Admin HTML IDs
     const name = document.getElementById('p-name').value;
+    const imageUrl = document.getElementById('p-image').value; // THE MISSING LINK
     const price = parseFloat(document.getElementById('p-price').value);
     const points = parseInt(document.getElementById('p-points').value);
     const category = document.getElementById('p-cat1').value;
@@ -205,6 +206,7 @@ async function handleProductSubmit(event) {
         .insert([
             { 
                 name: name, 
+                image_url: imageUrl, // MATCHES YOUR SQL COLUMN
                 price: price, 
                 points_equivalent: points, 
                 category: category, 
@@ -221,12 +223,59 @@ async function handleProductSubmit(event) {
         // 3. Reset the form for the next entry
         document.getElementById('product-form').reset();
         
-        // 4. Refresh the inventory list (if function exists)
+        // 4. Refresh the inventory list
         if (typeof loadProducts === "function") {
             loadProducts();
         }
     }
 }
+
+/* ============================================================
+     ===== PRODUCT DISPLAY LOGIC =====
+     ============================================================ */
+
+async function loadProducts() {
+    console.log("Tapat: Fetching menu items...");
+    
+    const { data: products, error } = await _supabase
+        .from('products')
+        .select('*')
+        .order('name', { ascending: true });
+
+    if (error) {
+        console.error("Error loading products:", error.message);
+        return;
+    }
+
+    const drinksContainer = document.getElementById('drinks-container');
+    const foodContainer = document.getElementById('food-container');
+
+    if (!drinksContainer || !foodContainer) return;
+
+    // Clear current content
+    drinksContainer.innerHTML = '';
+    foodContainer.innerHTML = '';
+
+    products.forEach(product => {
+        const productHtml = `
+            <div class="menu-item">
+                <img src="${product.image_url || 'https://images.unsplash.com/photo-1509042239860-f550ce710b93'}" alt="${product.name}">
+                <div class="menu-info">
+                    <h4>${product.name}</h4>
+                    <p>${product.highlight_tag ? `<span>${product.highlight_tag}</span>` : ''} ₱${product.price}</p>
+                </div>
+            </div>
+        `;
+
+        if (product.category === 'Drinks') {
+            drinksContainer.insertAdjacentHTML('beforeend', productHtml);
+        } else {
+            foodContainer.insertAdjacentHTML('beforeend', productHtml);
+        }
+    });
+}
+
+
 
 /* ═══════════════════════════════════════════════════════════════
    RALLY DRAFT FLOW
@@ -486,4 +535,14 @@ function viewRallySummaryDetail(rallyId) {
 function escapeHtml(str) {
     if (!str) return '';
     return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+//================= ADDITIONAL DOM FOR PRODUCT VIEW ==============//
+
+document.addEventListener('DOMContentLoaded', () => {
+    loadRallyDrafts();
+    loadRallySummary();
+    loadProducts(); // <--- Add this here
+});
+
 }
