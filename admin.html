@@ -9,385 +9,8 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <!-- QR Scanner -->
     <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
-	<!========== SECURITY GUARD: ADMIN ==========>
-<script>
-    async function checkAuth() {
-        // Wait a tiny bit to ensure Supabase is initialized from script.js
-        const { data: { session } } = await _supabase.auth.getSession();
-        
-        if (!session) {
-            window.location.href = 'index.html';
-            return;
-        }
 
-        const { data: profile } = await _supabase
-            .from('profiles')
-            .select('role')
-            .eq('id', session.user.id)
-            .single();
-
-        if (!profile || profile.role !== 'admin') {
-            window.location.href = 'index.html';
-        }
-    }
-    checkAuth();
-</script>
-
-
-    <style>
-        /* ═══════════════════════════════════════
-           TAPAT ADMIN — LOCAL STYLES
-           Design tokens reference style.css vars.
-           Scanner-specific styles live here.
-        ═══════════════════════════════════════ */
-
-        /* ── Scanner Section ── */
-        .scanner-section {
-            margin-bottom: 2.5rem;
-            border: 1px solid rgba(0,0,0,0.08);
-            border-radius: 16px;
-            overflow: hidden;
-            box-shadow: 0 2px 20px rgba(0,0,0,0.07);
-            background: #fff;
-        }
-
-        .scanner-mode-tabs {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            border-bottom: 1px solid rgba(0,0,0,0.08);
-        }
-
-        .scanner-tab {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 3px;
-            padding: 16px 8px 13px;
-            border: none;
-            border-bottom: 3px solid transparent;
-            background: transparent;
-            cursor: pointer;
-            transition: background 0.18s, border-color 0.18s;
-        }
-        .scanner-tab + .scanner-tab { border-left: 1px solid rgba(0,0,0,0.06); }
-        .scanner-tab:hover { background: rgba(0,0,0,0.025); }
-        .scanner-tab.active {
-            border-bottom-color: var(--accent, #b5824a);
-            background: rgba(181,130,74,0.04);
-        }
-        .tab-icon  { font-size: 20px; line-height: 1; }
-        .tab-label { font-size: 11px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase; color: #333; }
-        .tab-desc  { font-size: 10px; color: #999; }
-
-        /* Body layout */
-        .scanner-body {
-            display: grid;
-            grid-template-columns: 260px 1fr;
-            min-height: 340px;
-        }
-
-        /* Left: camera */
-        .scanner-left {
-            padding: 24px 20px;
-            border-right: 1px solid rgba(0,0,0,0.07);
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            gap: 14px;
-        }
-
-        .scanner-viewport {
-            width: 210px;
-            height: 210px;
-            background: #111;
-            border-radius: 14px;
-            position: relative;
-            overflow: hidden;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex-shrink: 0;
-        }
-        #qr-reader { width: 100% !important; height: 100% !important; }
-        #qr-reader video { object-fit: cover; }
-        #qr-reader__dashboard,
-        #qr-reader__header_message,
-        #qr-reader__status_span { display: none !important; }
-
-        .scanner-overlay { position: absolute; inset: 0; pointer-events: none; z-index: 2; }
-        .sc-corner { position: absolute; width: 22px; height: 22px; border-color: #b5824a; border-style: solid; }
-        .sc-corner.tl { top: 10px; left: 10px; border-width: 3px 0 0 3px; border-radius: 4px 0 0 0; }
-        .sc-corner.tr { top: 10px; right: 10px; border-width: 3px 3px 0 0; border-radius: 0 4px 0 0; }
-        .sc-corner.bl { bottom: 10px; left: 10px; border-width: 0 0 3px 3px; border-radius: 0 0 0 4px; }
-        .sc-corner.br { bottom: 10px; right: 10px; border-width: 0 3px 3px 0; border-radius: 0 0 4px 0; }
-        .sc-line {
-            position: absolute; left: 10px; right: 10px;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, #b5824a, transparent);
-            top: 15%; opacity: 0;
-        }
-        .scanner-viewport.scanning .sc-line { animation: scanline 1s ease-in-out infinite; }
-        .scanner-viewport.success { background: #0a2416; }
-        .scanner-viewport.error   { background: #2a0a0a; }
-        @keyframes scanline {
-            0%   { top: 15%; opacity: 1; }
-            50%  { top: 82%; opacity: 1; }
-            100% { top: 15%; opacity: 0; }
-        }
-
-        .scanner-idle-msg {
-            position: absolute; inset: 0; z-index: 1;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            gap: 8px; color: rgba(255,255,255,0.35); font-size: 12px; text-align: center; padding: 16px;
-        }
-        .scanner-viewport.scanning .scanner-idle-msg,
-        .scanner-viewport.success  .scanner-idle-msg,
-        .scanner-viewport.error    .scanner-idle-msg { display: none; }
-
-        .scanner-status-msg {
-            position: absolute; bottom: 0; left: 0; right: 0;
-            padding: 6px; font-size: 10px; text-align: center;
-            color: rgba(255,255,255,0.5); z-index: 3; letter-spacing: 0.03em;
-        }
-
-        .scanner-btn-row { display: flex; gap: 8px; width: 100%; }
-        .scanner-btn-row .btn { flex: 1; font-size: 13px; padding: 8px 10px; }
-
-        /* Right: panels */
-        .scanner-right { position: relative; }
-        .scanner-panel { display: none; flex-direction: column; gap: 16px; padding: 24px; height: 100%; }
-        .scanner-panel.active { display: flex; }
-
-        /* Placeholder */
-        .panel-placeholder {
-            flex: 1; display: flex; flex-direction: column;
-            align-items: center; justify-content: center;
-            gap: 10px; text-align: center;
-            color: #bbb; font-size: 13px; line-height: 1.6; padding: 20px;
-        }
-        .panel-placeholder.hidden { display: none; }
-        .placeholder-icon { font-size: 32px; opacity: 0.3; margin-bottom: 4px; }
-
-        /* Client card */
-        .client-card {
-            display: flex; align-items: center; gap: 12px;
-            padding: 12px 14px; background: #fafaf8;
-            border: 1px solid rgba(0,0,0,0.08); border-radius: 10px;
-        }
-        .client-card.hidden { display: none; }
-        .client-avatar {
-            width: 46px; height: 46px; border-radius: 50%;
-            background: var(--accent, #b5824a); color: #fff;
-            font-size: 15px; font-weight: 700;
-            display: flex; align-items: center; justify-content: center;
-            flex-shrink: 0;
-        }
-        .client-name { font-size: 15px; font-weight: 700; margin-bottom: 5px; }
-        .client-meta { display: flex; align-items: center; gap: 8px; }
-        .client-pts  { font-size: 12px; color: #777; }
-
-        .tier-badge { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; padding: 2px 8px; border-radius: 20px; }
-        .tier-bronze   { background: #f5ece0; color: #7a4a1e; }
-        .tier-silver   { background: #eef0f5; color: #4a5568; }
-        .tier-gold     { background: #fdf3dc; color: #7a5a10; }
-        .tier-platinum { background: #e8f4f8; color: #1a5276; }
-
-        /* Mode 1 */
-        .bill-area { display: flex; flex-direction: column; gap: 10px; }
-        .bill-area.hidden { display: none; }
-        .field-label { font-size: 12px; font-weight: 600; color: #666; margin-bottom: 2px; display: block; }
-        .bill-row { display: flex; gap: 8px; }
-        .bill-row input { flex: 1; }
-        .pts-preview {
-            display: flex; justify-content: space-between; align-items: center;
-            padding: 10px 14px; background: #fdf6e8;
-            border-radius: 8px; border: 1px solid rgba(181,130,74,0.2);
-            font-size: 13px; color: #888;
-        }
-        .pts-preview strong { font-size: 20px; font-weight: 700; color: #7a5a10; }
-        .multiplier-note { font-size: 11px; color: #aaa; text-align: center; }
-
-        /* Mode 2 */
-        .redeem-area { display: flex; flex-direction: column; gap: 12px; }
-        .redeem-area.hidden { display: none; }
-        .redeem-cards-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-        .redeem-card {
-            padding: 12px 14px; background: #fafaf8;
-            border: 1px solid rgba(0,0,0,0.08); border-radius: 10px;
-        }
-        .redeem-card-label { font-size: 11px; color: #999; margin-bottom: 4px; }
-        .redeem-card-value { font-size: 22px; font-weight: 700; color: var(--accent, #b5824a); }
-        .redeem-card.danger .redeem-card-value { color: #c0392b; }
-        .redeem-note { font-size: 11px; color: #aaa; text-align: center; line-height: 1.5; margin: 0; }
-
-        /* Mode 3 */
-        .rally-area { display: flex; flex-direction: column; gap: 12px; flex: 1; min-height: 0; }
-        .rally-area.hidden { display: none; }
-        .rally-header {
-            display: flex; justify-content: space-between; align-items: center;
-            padding-bottom: 10px; border-bottom: 1px solid rgba(0,0,0,0.07);
-        }
-        .rally-name-tag     { font-weight: 700; font-size: 13px; }
-        .rally-progress-tag { font-size: 12px; color: #999; }
-        .task-checklist {
-            display: flex; flex-direction: column; gap: 5px;
-            overflow-y: auto; max-height: 220px; padding-right: 2px;
-        }
-        .task-check-row {
-            display: flex; align-items: center; gap: 10px;
-            padding: 8px 12px; border-radius: 8px;
-            border: 1px solid rgba(0,0,0,0.07);
-            cursor: pointer; font-size: 13px;
-            transition: background 0.15s; user-select: none;
-        }
-        .task-check-row:hover { background: rgba(0,0,0,0.025); }
-        .task-check-row.done { background: #edfaf4; border-color: rgba(0,150,80,0.15); }
-        .task-check-row.done .task-desc { color: #666; }
-        .task-desc    { flex: 1; line-height: 1.4; }
-        .task-pts-chip { font-size: 11px; font-weight: 600; color: #888; flex-shrink: 0; }
-        .task-done-chip {
-            font-size: 10px; font-weight: 700; padding: 2px 7px; border-radius: 20px;
-            background: #c8f0dc; color: #0a5c32;
-            text-transform: uppercase; letter-spacing: 0.04em; flex-shrink: 0;
-        }
-
-        /* ═══════════════════════════════════════
-           RALLY DRAFT FLOW
-        ═══════════════════════════════════════ */
-
-        .rally-draft-hint {
-            font-size: 12px;
-            color: #aaa;
-            margin: 0 0 12px;
-        }
-
-        .rally-draft-empty {
-            font-size: 13px;
-            color: #bbb;
-            padding: 16px 0;
-            text-align: center;
-        }
-
-        .rally-draft-card {
-            border: 1px solid rgba(0,0,0,0.1);
-            border-radius: 12px;
-            overflow: hidden;
-            margin-bottom: 12px;
-            background: #fff;
-            box-shadow: 0 1px 8px rgba(0,0,0,0.05);
-            transition: box-shadow 0.2s;
-        }
-        .rally-draft-card:hover {
-            box-shadow: 0 4px 16px rgba(0,0,0,0.09);
-        }
-
-        .rally-draft-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 14px 16px;
-            cursor: pointer;
-            user-select: none;
-        }
-        .rally-draft-header:hover { background: rgba(0,0,0,0.015); }
-
-        .rally-draft-info { flex: 1; min-width: 0; }
-        .rally-draft-title {
-            font-size: 14px;
-            font-weight: 700;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .rally-draft-dates {
-            font-size: 11px;
-            color: #999;
-            margin-top: 2px;
-        }
-
-        .rally-draft-status {
-            font-size: 10px;
-            font-weight: 700;
-            text-transform: uppercase;
-            letter-spacing: 0.06em;
-            padding: 3px 9px;
-            border-radius: 20px;
-            flex-shrink: 0;
-        }
-        .status-draft     { background: #f0f0f0; color: #777; }
-        .status-published { background: #e0f5ea; color: #1a7a42; }
-
-        .rally-draft-chevron {
-            font-size: 12px;
-            color: #bbb;
-            flex-shrink: 0;
-            transition: transform 0.2s;
-        }
-        .rally-draft-card.open .rally-draft-chevron { transform: rotate(180deg); }
-
-        .rally-draft-body {
-            display: none;
-            padding: 0 16px 16px;
-            border-top: 1px solid rgba(0,0,0,0.06);
-        }
-        .rally-draft-card.open .rally-draft-body { display: block; }
-
-        .rally-draft-body .task-management-grid {
-            margin: 14px 0 10px;
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-        .rally-draft-body .task-row {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-        .rally-draft-body .task-num {
-            font-size: 12px;
-            color: #bbb;
-            width: 20px;
-            flex-shrink: 0;
-            text-align: right;
-        }
-        .rally-draft-body .task-desc-input { flex: 1; }
-        .rally-draft-body .task-pts-input  { width: 72px; flex-shrink: 0; }
-
-        .rally-publish-row {
-            display: flex;
-            gap: 8px;
-            margin-top: 12px;
-        }
-        .rally-publish-row .btn { flex: 1; }
-        .btn-danger {
-            background: transparent;
-            border: 1px solid #e0b0b0;
-            color: #c0392b;
-            border-radius: 8px;
-            font-size: 13px;
-            padding: 8px 14px;
-            cursor: pointer;
-            transition: background 0.15s;
-        }
-        .btn-danger:hover { background: #fdf0f0; }
-
-        /* Utilities */
-        .w-100  { width: 100%; }
-        .mt-12  { margin-top: 12px; }
-        .mt-20  { margin-top: 20px; }
-        .hidden { display: none !important; }
-        .section-label {
-            font-size: 11px; font-weight: 700; letter-spacing: 0.08em;
-            text-transform: uppercase; color: #bbb; margin: 0 0 1rem;
-        }
-
-        /* Responsive */
-        @media (max-width: 680px) {
-            .scanner-body { grid-template-columns: 1fr; }
-            .scanner-left { border-right: none; border-bottom: 1px solid rgba(0,0,0,0.07); }
-            .redeem-cards-row { grid-template-columns: 1fr; }
-        }
-    </style>
+    <!-- All styles are in style.css -->
 </head>
 
 <body class="admin-page">
@@ -617,6 +240,10 @@
                             <input type="number" id="p-points" placeholder="Points" min="0" required class="auth-input">
                         </div>
                     </div>
+                    <div class="form-group">
+                        <label>Product Image URL</label>
+                        <input type="url" id="p-image" placeholder="Paste Unsplash link here..." class="auth-input">
+                    </div>
                     <div class="form-row">
                         <div class="form-group">
                             <label>Category</label>
@@ -656,7 +283,6 @@
                 <p class="section-label">Rally</p>
                 <h3>Rally Management</h3>
 
-                <!-- Step 1: Basic info — creates a draft -->
                 <form id="rally-form" onsubmit="handleRallySubmit(event)">
                     <div class="form-group">
                         <label>Rally Name</label>
@@ -672,54 +298,61 @@
                             <input type="date" id="r-end" required class="auth-input">
                         </div>
                     </div>
-                    <div class="form-group">
-                        <label>Grand Prize Name</label>
-                        <input type="text" id="r-prize-name" placeholder="e.g. Free Pastry &amp; Coffee" class="auth-input">
+
+                    <label>Tasks &amp; Points (up to 10)</label>
+                    <div class="task-management-grid" id="task-input-grid">
+                        <!--
+                            data-index used by script.js → collectTaskInputs()
+                            Only rows with a non-empty description are saved.
+                        -->
+                        <div class="task-row"><span class="task-num">1.</span><input type="text"   class="task-input task-desc-input" data-index="0" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="0" placeholder="Pts" min="0"></div>
+                        <div class="task-row"><span class="task-num">2.</span><input type="text"   class="task-input task-desc-input" data-index="1" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="1" placeholder="Pts" min="0"></div>
+                        <div class="task-row"><span class="task-num">3.</span><input type="text"   class="task-input task-desc-input" data-index="2" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="2" placeholder="Pts" min="0"></div>
+                        <div class="task-row"><span class="task-num">4.</span><input type="text"   class="task-input task-desc-input" data-index="3" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="3" placeholder="Pts" min="0"></div>
+                        <div class="task-row"><span class="task-num">5.</span><input type="text"   class="task-input task-desc-input" data-index="4" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="4" placeholder="Pts" min="0"></div>
+                        <div class="task-row"><span class="task-num">6.</span><input type="text"   class="task-input task-desc-input" data-index="5" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="5" placeholder="Pts" min="0"></div>
+                        <div class="task-row"><span class="task-num">7.</span><input type="text"   class="task-input task-desc-input" data-index="6" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="6" placeholder="Pts" min="0"></div>
+                        <div class="task-row"><span class="task-num">8.</span><input type="text"   class="task-input task-desc-input" data-index="7" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="7" placeholder="Pts" min="0"></div>
+                        <div class="task-row"><span class="task-num">9.</span><input type="text"   class="task-input task-desc-input" data-index="8" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="8" placeholder="Pts" min="0"></div>
+                        <div class="task-row"><span class="task-num">10.</span><input type="text"  class="task-input task-desc-input" data-index="9" placeholder="Task description"><input type="number" class="task-input task-pts-input" data-index="9" placeholder="Pts" min="0"></div>
                     </div>
-                    <div class="form-group">
-                        <label>Grand Prize Description</label>
-                        <input type="text" id="r-prize-desc" placeholder="e.g. One free pastry of choice + any hot drink" class="auth-input">
+
+                    <div class="form-group mt-12">
+                        <label>Grand Prize</label>
+                        <input type="text" id="r-prize" placeholder="e.g. Free Pastry &amp; Coffee" class="auth-input">
                     </div>
-                    <button type="submit" class="btn btn-primary w-100">Create Rally Draft</button>
+
+                    <button type="submit" class="btn btn-primary w-100">Launch Rally</button>
                 </form>
-
-                <!-- Step 2: Draft cards — click to expand, add tasks, publish -->
-                <div class="mt-20">
-                    <p class="section-label" style="margin-bottom:0.5rem;">Draft Rallies</p>
-                    <p class="rally-draft-hint">Click a rally card to add tasks, then publish it.</p>
-                    <div id="rally-draft-list">
-                        <div class="rally-draft-empty" id="rally-draft-empty">No draft rallies yet.</div>
-                    </div>
-                </div>
             </div>
 
-            <!-- Rally History & Summary -->
-            <div class="admin-card mt-20">
-                <p class="section-label">Performance</p>
-                <h3>Rally History &amp; Summary</h3>
+<div class="admin-card mt-20">
+    <p class="section-label">Performance</p>
+    <h3>Rally History & Summary</h3>
+    
+    <div class="history-table-wrapper">
+        <table class="history-table">
+            <thead>
+                <tr>
+                    <th>Status</th>
+                    <th>Rally Name</th>
+                    <th>Participants</th>
+                    <th>Winners</th>
+                    <th style="text-align: right;">Actions</th>
+                </tr>
+            </thead>
+            <tbody id="rally-summary-list">
+                <tr>
+                    <td colspan="5" style="text-align:center; padding:20px; color:#999;">
+                        Loading rally data...
+                    </td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</div>
 
-                <div class="history-table-wrapper">
-                    <table class="history-table">
-                        <thead>
-                            <tr>
-                                <th>Status</th>
-                                <th>Rally Name</th>
-                                <th>Participants</th>
-                                <th>Winners</th>
-                                <th style="text-align: right;">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody id="rally-summary-list">
-                            <tr>
-                                <td colspan="5" style="text-align:center; padding:20px; color:#999;">
-                                    Loading rally data...
-                                </td>
-                            </tr>
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-
+   
         <section class="admin-card mt-20">
             <p class="section-label">System Audit</p>
             <div class="history-header">
@@ -784,18 +417,11 @@
       renderProductList(arr)     — inject rows into #product-list
                                    each row: name, price, points, cat1, cat2 + delete button
 
-    RALLY DRAFT FLOW
-      handleRallySubmit(e)       — e.preventDefault(), read form, insert to `rallies` (is_active:false),
-                                   reset form, call loadRallyDrafts()
-      loadRallyDrafts()          — fetch rallies where is_finalized=false, render .rally-draft-card
-                                   elements into #rally-draft-list
-      toggleRallyCard(rallyId)   — toggle .open on .rally-draft-card[data-rally-id]
-      publishRally(rallyId)      — collectTaskInputsFromCard(), insert rally_tasks,
-                                   update rallies set is_active=true, reload lists
-      collectTaskInputsFromCard(card) — zip .task-desc-input + .task-pts-input, return non-empty rows
-      deleteRallyDraft(rallyId)  — confirm + delete where is_active=false, loadRallyDrafts()
-      loadRallySummary()         — fetch all rallies, render into #rally-summary-list
-      viewRallySummaryDetail(id) — placeholder for detail modal/route
+    RALLY
+      handleRallySubmit(e)       — e.preventDefault(), collectTaskInputs(), insert `rallies`,
+                                   insert `rally_tasks`, insert `user_rally_tasks` for all users
+      collectTaskInputs()        — zip .task-desc-input + .task-pts-input by data-index,
+                                   return non-empty rows as [{ description, points }]
 
     DOM IDs
       Scanner   : #scanner-viewport #qr-reader #sc-line #scanner-idle #scanner-status-msg
@@ -810,8 +436,8 @@
       M3 cards  : #m3-client-card #m3-avatar #m3-name #m3-tier #m3-points
                   #m3-rally-area #m3-rally-name #m3-progress #m3-task-list
       Products  : #product-form #p-name #p-price #p-points #p-cat1 #p-cat2 #product-list
-      Rally form: #rally-form #r-name #r-start #r-end #r-prize-name #r-prize-desc
-      Rally UI  : #rally-draft-list #rally-draft-empty #rally-summary-list
+      Rally     : #rally-form #r-name #r-start #r-end #r-prize
+                  .task-desc-input[data-index] .task-pts-input[data-index]
     ═══════════════════════════════════════════════════════════════
     -->
     <script src="script.js"></script>
